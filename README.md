@@ -14,6 +14,8 @@ For experienced programmers this is probably very low quality code, but since th
 3. Plot geomap and create png per day
 4. Create gif of all pngs
 
+covid_main.py runs the other scripts as needed..
+
 
 #### Feedback very welcome!
 
