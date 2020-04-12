@@ -15,7 +15,7 @@ For experienced programmers this is probably very low quality code, but since th
 4. Create gif of all pngs
 
 
-Feedback very welcome!
+####Feedback very welcome!
 
 
 
