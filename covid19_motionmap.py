@@ -10,6 +10,7 @@ import datetime
 from datetime import datetime
 import glob
 import requests
+import time
 
 import pandas
 import geopandas
@@ -28,8 +29,8 @@ def get_data():
     """Gets data of Covid19 cases world wide from data repository by Johns Hopkins CSSE
     @https://github.com/CSSEGISandData/COVID-19 by way of csv import. Performs some
     data cleaning to align with later used shape file."""
-    url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
-    data_covid = pandas.read_csv(url, index_col=0)
+    data_url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
+    data_covid = pandas.read_csv(data_url, index_col=0)
     data_covid = data_covid.drop(columns=['Lat', 'Long'])
 
     #Shape file used later doesn't list 'West Bank and Gaza' separately but has it included
@@ -56,7 +57,7 @@ def get_data():
 									     "Timor-Leste" : "East Timor", "US": "United States of America",\
 									     "Taiwan*" : "Taiwan", "Eswatini":"eSwatini"})
 
-    return data_covid
+    get_data.d = data_covid
 
 get_data()
 
@@ -70,15 +71,19 @@ def get_shape_from_url():
 
     standard_url = 'https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/cultural/ne_10m_admin_0_countries.zip'
 
-    user_input = input('Please provide the full url to the zip file or hit any key to use the standard link provided above.')
+    user_input = input('Two options of shape file source: ''\n''1. Paste the full url to the zip file and hit "Enter"' '\n''2. Hit "Enter"to use the standard link provided above.''\n')
 
-    for _x in user_input:
-        if not user_input.startswith('http'):
-            url = standard_url
-        else:
-            url = user_input
+    print('')
+    print('Processing the data.')
+    print('')
+    print('')
 
-    request = requests.get(url)
+    if not user_input.startswith('http') or user_input == "":
+        shape_url = standard_url
+    else:
+        shape_url = user_input
+
+    request = requests.get(shape_url)
     _b = bytes(request.content)
     with fiona.BytesCollection(_b) as _f:
         crs = _f.crs
@@ -94,7 +99,8 @@ def get_shape_from_url():
     world_all['Country_Region'] = world_all['Country_Region'].replace({"SÃ£o TomÃ© and Principe"\
         :"Sao Tome and Principe"})
 
-    return world_all
+    get_shape_from_url.w = world_all
+
 
 get_shape_from_url()
 
@@ -102,18 +108,18 @@ get_shape_from_url()
 def get_shape_from_local():
     """Get the world shapefile to draw geo map from local path
     """
-    local_path = input('Please provide the full local path and filename of the shape file, e.g. \
-        C:/Users/lange/data/world.shp')
+    local_path = input('Please provide the full local path and filename of the shape file, e.g. C:/Users/lange/data/world.shp')
+    print('')
+    print('')
     world_all = geopandas.read_file(local_path)
-
-    return world_all
-
+    get_shape_from_local.w = world_all
 
 
 def merge_data_shape():
     """Merge both data and shape file
     """
-    covid_world = world_all.merge(data_covid, on='Country_Region', how='outer').reset_index()
+    covid_world = get_shape_from_url.w.merge(get_data.d, on='Country_Region', how='outer').\
+    reset_index()
 
     #Override NaN values with zero and 9999 where index column, respectively.
     covid_world[covid_world.columns[3:]] = covid_world[covid_world.columns[3:]].fillna(0)
@@ -126,7 +132,14 @@ def merge_data_shape():
     covid_world = geopandas.GeoDataFrame(
         covid_world, geometry=covid_world['geometry'])
 
-    return covid_world, covid_max
+    #Last column for standard value of 'def show_map' 
+    covid_last = covid_world.iloc[:, -1]
+    covid_last = covid_last.reset_index().columns.values[1]
+
+    merge_data_shape.cw = covid_world
+    merge_data_shape.cm = covid_max
+    merge_data_shape.col = covid_world.columns[3:]
+    merge_data_shape.cl = covid_last
 
 merge_data_shape()
 
@@ -134,58 +147,61 @@ merge_data_shape()
 def merged_to_csv():
     """Control export of shape file without 'geometry' as it wouldn't export otherwise
     """
-    query_user_csv = input('If you want to export the merged file as csv and have a \
-        look before we proceed, please type "Yes" or "Y", otherwise press any key.')
-    if query_user_csv == 'Yes' | 'Y':
-        covid_world_csv = covid_world.drop(columns='geometry').reset_index()
+    query_user_csv = input('If you would like to inspect the merged file as csv before we proceed, please type "Yes" or "Y" and hit "Enter", otherwise just hit "Enter".''\n')
+    if (query_user_csv is 'Yes' or 'Y') and not (query_user_csv == ""):
+        covid_world_csv = merge_data_shape.cw.drop(columns='geometry').reset_index()
         covid_world_csv.to_csv('covid_world.csv', index=True, header=True)
-        print('Press any key to continue.')
+    query_user_csv == ''
 
+    print('')
+    print('')
 merged_to_csv()
+
 
 
 def get_output_type():
     """Get path for save Ask for user input to determine if to create gif or a \
     sample geo chart print
     """
+    name_image = ''
+    dir_name = ''
     col_val = None
     out_option = input('\n''Please choose from one of three output options:''\n'\
-        '1. To create a gif file that includes all data, type "gif" followed by "Enter"''\n'\
-        '2. Creation of a movie file is coming soon. Nothin to select yet :/..''\n'\
-        '3. To merely show geo chart for one column >> type any key followed by "Enter"''\n')
+        '1. To create a gif file that includes all data, type "gif" and hit "Enter"''\n'\
+        '2. Creation of a movie file is coming soon. Nothing to select yet :/..''\n'\
+        '3. To merely show geo chart for one column, just hit "Enter"''\n')
         #'2. To create a movie file that includes all data, type "movie" followed by "Enter"''\n'\
+    print('')
+    print('')
 
-    if out_option == 'gif':
-        output = 'gif'
+    if out_option is not ('gif' and 'movie') or out_option == "":
+        print(merge_data_shape.col)
+        print('')
+        col_val = input('Please refer to the column header list above and type the date to be used for the chart, and hit "Enter" or only hit "Enter" for the latest date.''\n')
+        if col_val == '':
+            col_val = str(merge_data_shape.cl)
 
-    elif out_option == 'movie':
-        output = 'movie'
+    elif out_option is ('gif' and 'movie'):
+        dir_name = input('Please insert the full path of the desired png directory and hit "Enter": ')
+        name_image = input('Please insert a name for the image files and hit "Enter" or only hit "Enter" for the default name "image": ''\n')
 
-    else:
-        for col in covid_world.columns:
-            print(col)
+    if name_image == '':
+        name_image = 'image'
 
-        col_val = input('Please refer to the column header list above and type the column \
-            to be used for the chart''\n')
+    print('')
+    print('')
 
-    if out_option == 'gif' | 'movie':
-
-        dir_name = input('Please insert the full path of the desired png directory and hit enter: ')
-
-        name_image = input('Please insert a name for the image files and hit enter or only \
-            hit enter for a default name: ')
-
-        if name_image == '':
-            name_image = 'image'
-
-    return output, col_val, name_image, dir_name
+    get_output_type.oo = out_option
+    get_output_type.c = col_val
+    get_output_type.n = name_image
+    get_output_type.d = dir_name
 
 get_output_type()
 
 def show_map():
     """Display geo map for user-specified date
     """
-    data_col = covid_world[str(col_val)]
+    data_col = merge_data_shape.cw[str(get_output_type.c)]
     data_col_header = (data_col.reset_index()).columns.values[1]
     chart_date = datetime.strptime(str(data_col_header), '%m/%d/%y').strftime('%m/%d/%y')
 
@@ -194,7 +210,7 @@ def show_map():
 
     #Change projection to Miller in order to remove map distortions. \
     #Check alt classifiers >> https://pysal.org/mapclassify/_modules/mapclassify/classifiers.html
-    ax1 = geoplot.polyplot(covid_world, gcrs.Miller(), figsize=(30, 15))
+    ax1 = geoplot.polyplot(merge_data_shape.cw, gcrs.Miller(), figsize=(30, 15))
     ax1.set_title('Covid-19 Cases by Country', fontsize=28, loc='left')
     ax1.text(0.85, 0.93, str(chart_date), color='blue', alpha=0.7, fontsize=40, \
         transform=ax1.transAxes)
@@ -203,33 +219,43 @@ def show_map():
             color='#004C74', alpha=1, fontsize=14, transform=ax1.transAxes)
 
     #Customized data bins.
-    scheme = mapclassify.UserDefined(data_col, bins=[10, 300, 1000, round(int(covid_max*0.01/1000)\
-        *1000), round(int(covid_max*0.1/10000)*1000), round(int(covid_max*0.5/10000)*1000), \
-    covid_max])
+    scheme = mapclassify.UserDefined(data_col, bins=[10, 300, 1000, \
+        round(int(merge_data_shape.cm*0.01/1000)*1000), \
+        round(int(merge_data_shape.cm*0.1/10000)*10000), \
+        round(int(merge_data_shape.cm*0.5/10000)*10000), merge_data_shape.cm])
 
-    geoplot.choropleth(covid_world, hue=data_col, scheme=scheme, legend=True, \
+    geoplot.choropleth(merge_data_shape.cw, hue=data_col, scheme=scheme, legend=True, \
         legend_kwargs={'loc':'lower left', 'fontsize':16}, cmap=cmap, norm=norm, ax=ax1, \
         extent=(-180, -60, 180, 90),)
 
-    #fig1 = plt.gcf()
-
+    
+    print('')
+    print('')
+    save_fig = input('If you would also like to save the map as a png file to the current directory, type "save" and hit "Enter". To continue without saving just hit "Enter".''\n')
+    if save_fig == 'save':
+        fig1 = plt.gcf()
+        #Change dpi to higher value for higher res (dpi*2 = size*4!!!). \
+        #This currently gives ~1000 x 600, depends on local settings though.
+        filename_s = 'image.png'
+        fig1.savefig(filename_s, bbox_inches='tight', pad_inches=0.1, \
+                    optimize=True, dpi=50)
+    
     plt.show()
-
 
 def save_map_to_png():
     """Save geo maps as png files for every date in date row.
     """
-    for index in range(3, covid_world.shape[1]):
+    for index in range(3, merge_data_shape.cw.shape[1]):
     #Sequence that plots and saves png for every date in date row.
         norm = matplotlib.colors.Normalize(vmin=0, vmax=6)
         cmap = matplotlib.cm.ScalarMappable(norm=norm, cmap='Reds').cmap
 
         #Change projection to Miller in order to remove map distortions. \
         #Chk alt classifiers >> https://pysal.org/mapclassify/_modules/mapclassify/classifiers.html
-        ax1 = geoplot.polyplot(covid_world, gcrs.Miller(), figsize=(30, 15))
+        ax1 = geoplot.polyplot(merge_data_shape.cw, gcrs.Miller(), figsize=(30, 15))
 
         #data_col is the respective date column selected.
-        data_col = covid_world.iloc[:, index]
+        data_col = merge_data_shape.cw.iloc[:, index]
         #Convert to date to provide as secondary title.
         data_col_header = (data_col.reset_index()).columns.values[1]
         chart_date = datetime.strptime(str(data_col_header), '%m/%d/%y').strftime('%m/%d/%y')
@@ -243,10 +269,11 @@ def save_map_to_png():
 
         #Customized data bins
         scheme = mapclassify.UserDefined(data_col, bins=[10, 300, 1000, \
-            round(int(covid_max*0.01/1000)*1000), round(int(covid_max*0.1/10000)*10000), \
-            round(int(covid_max*0.5/10000)*10000), covid_max])
+            round(int(merge_data_shape.cm*0.01/1000)*1000), \
+            round(int(merge_data_shape.cm*0.1/10000)*10000), \
+            round(int(merge_data_shape.cm*0.5/10000)*10000), merge_data_shape.cm])
 
-        geoplot.choropleth(covid_world, hue=data_col, scheme=scheme, legend=True, \
+        geoplot.choropleth(merge_data_shape.cw, hue=data_col, scheme=scheme, legend=True, \
             legend_kwargs={'loc':'lower left', 'fontsize':16}, cmap=cmap, norm=norm, ax=ax1, \
             extent=(-180, -60, 180, 90),)
 
@@ -257,14 +284,14 @@ def save_map_to_png():
         data_col_header_formatted = datetime.strptime(str(data_col_header), '%m/%d/%y').date()
 
         #Create dir for png files.
-        if not os.path.exists(dir_name):
-            os.mkdir(dir_name)
-            print("Directory ", dir_name, " Created ")
+        if not os.path.exists(get_output_type.d):
+            os.mkdir(get_output_type.d)
+            print("Directory ", get_output_type.d, " Created ")
 
         #Change dpi to higher value for higher res (dpi*2 = size*4!!!). \
         #This currently gives ~1000 x 600, depends on local settings though.
-        filename = (name_image + str(data_col_header_formatted) + '.png')
-        fig1.savefig(dir_name + '/' + filename, bbox_inches='tight', pad_inches=0.1, \
+        filename = (get_output_type.n + str(data_col_header_formatted) + '.png')
+        fig1.savefig(get_output_type.d + '/' + filename, bbox_inches='tight', pad_inches=0.1, \
             optimize=True, dpi=50)
 
         plt.close('all')
@@ -273,8 +300,8 @@ def png_to_gif():
     """Make gif file from png files created before.
     """
     #Create list for length of sequences of gif
-    file_number = len([name for name in os.listdir(dir_name) \
-        if os.path.isfile(os.path.join(dir_name, name))])
+    file_number = len([name for name in os.listdir(get_output_type.d) \
+        if os.path.isfile(os.path.join(get_output_type.d, name))])
     list_dur = []
     dur = 200
     cycles = 0
@@ -287,8 +314,8 @@ def png_to_gif():
     list_dur += [2000]
 
     #File(s) in/out
-    fp_in = dir_name + '/' + name_image + '2020-*.png'
-    fp_out = dir_name + '/' + name_image + '.gif'
+    fp_in = get_output_type.d + '/' + get_output_type.n + '2020-*.png'
+    fp_out = get_output_type.d + '/' + get_output_type.n + '.gif'
 
     img, *imgs = [Image.open(f) for f in sorted(glob.glob(fp_in))]
     img.save(fp=fp_out, format='GIF', append_images=imgs, save_all=True, duration=list_dur, \
@@ -336,11 +363,11 @@ def covid_output():
     """Based on user selection of ouput type, this function will show a greo map of
     the respective date picked by user or create a gif file from all png files created before.
     """
-    if output == 'gif':
+    if get_output_type.oo == 'gif':
         save_map_to_png()
         png_to_gif()
 
-    elif option == 'movie':
+    elif get_output_type.oo == 'movie':
         save_map_to_png()
         #insert here fcuntion 'png_to_mp4' once done
 
