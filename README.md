@@ -3,7 +3,7 @@
 
 This is my first Python project (and actually coding projects aside of some GoogleAppScript scripts) with the use case of creating a gif geo map (motion map) of Covid19 cases by country as aggregated by [CSSEGIS](https://github.com/CSSEGISandData/COVID-19).
 
-Libraries/ packages/ modules used: geopandas, geoplot, pandas, mapclassify, matplotlib, pyplot, datetime, os, imageio, glob, PIL, requests, fiona 
+Libraries/ packages/ modules used: geopandas, geoplot, pandas, mapclassify, matplotlib, pyplot, datetime, os, imageio, glob, PIL, requests, fiona. 
 Refer to requirements.txt
 
 I encountered many issues with dependencies between libraries. It seems it is not easy to get geopandas running. The only thing that worked was an installation via Anaconda [4.7.12](https://repo.continuum.io/archive/).
