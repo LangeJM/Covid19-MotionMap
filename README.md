@@ -5,7 +5,7 @@ This is my first Python project (and actually coding projects aside of some Goog
 
 Refer to [requirements.txt](https://github.com/LangeJM/Covid19-MotionMap/blob/master/requirements.txt) for a list of libraries/ packages/ modules used. 
 
-I encountered many issues with dependencies between libraries. It seems top be rather difficult to get geopandas running. The only thing that worked was an installation via Anaconda [4.7.12](https://repo.continuum.io/archive/).
+I encountered many issues with dependencies. It seems top be rather difficult to get geopandas running. The only thing that worked was an installation via Anaconda [4.7.12](https://repo.continuum.io/archive/).
 
 What the script does:
 1. Get data of Covid19 cases by day and country, get world shape file from Natural Earth
