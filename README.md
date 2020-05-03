@@ -17,7 +17,7 @@ Currently the script only recognizes input from Windows filesystem.
 
 #### Feedback very welcome!
 
-[](https://github.com/LangeJM/Covid19-MotionMap/blob/master/covid19-motionmap_example.gif)
+![](covid19-motionmap_example.gif)
 
 
 
