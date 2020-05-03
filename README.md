@@ -2,6 +2,7 @@
 ### Python Script to create gif geo map (motion map)  based on data from CSSEGIS (Johns Hopkins) 
 
 This is my first Python project (and actually coding projects aside of some GoogleAppsScript scripts) with the use case of creating a gif geo map (motion map) of Covid19 cases by country as aggregated by [CSSEGIS](https://github.com/CSSEGISandData/COVID-19).
+For a comprehensive list of other Covid19 related projects and data sources visit see [covid19](https://github.com/pomber/covid19)
 
 Refer to [requirements.txt](https://github.com/LangeJM/Covid19-MotionMap/blob/master/requirements.txt) for a list of libraries/ packages/ modules used. 
 
