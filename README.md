@@ -14,7 +14,7 @@ What the script does:
 3. Plot geomap and create png per day
 4. Create gif of all pngs
 
-Currently the script only recognizes input from Windows filesystem. 
+Currently, the script only recognizes input from Windows filesystem. 
 
 #### Feedback very welcome!
 
