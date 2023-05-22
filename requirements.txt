@@ -1,9 +1,9 @@
-﻿os
+os
 datetime
 glob==0.7
 msvcrt
 tkinter
-requests==2.22.0
+requests==2.31.0
 
 pandas==1.0.3
 geopandas==0.4.1
